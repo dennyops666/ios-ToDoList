@@ -12,8 +12,8 @@ class TaskListViewController: UIViewController {
     private var currentCategory: String? = nil
     private let categories = ["全部", "工作", "生活", "学习"]
     
-    private let categorySegmentedControl: UISegmentedControl = {
-        let control = UISegmentedControl(items: ["全部", "工作", "生活", "学习"])
+    private var categorySegmentedControl: UISegmentedControl = {
+        let control = UISegmentedControl(items: CategoryManager.shared.categories)
         control.selectedSegmentIndex = 0
         
         // 设置基本样式
@@ -66,6 +66,14 @@ class TaskListViewController: UIViewController {
             self,
             selector: #selector(themeChanged),
             name: .themeChanged,
+            object: nil
+        )
+        
+        // 添加分类变化观察者
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(categoriesDidChange),
+            name: .categoriesDidChange,
             object: nil
         )
     }
@@ -125,7 +133,15 @@ class TaskListViewController: UIViewController {
             action: #selector(themeButtonTapped)
         )
         
-        navigationItem.leftBarButtonItem = themeButton
+        // 添加分类管理按钮
+        let categoryButton = UIBarButtonItem(
+            image: UIImage(systemName: "list.bullet"),
+            style: .plain,
+            target: self,
+            action: #selector(categoryManageTapped)
+        )
+        
+        navigationItem.leftBarButtonItems = [themeButton, categoryButton]
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             barButtonSystemItem: .add,
             target: self,
@@ -159,7 +175,16 @@ class TaskListViewController: UIViewController {
     }
     
     @objc private func categoryChanged() {
-        currentCategory = categorySegmentedControl.selectedSegmentIndex == 0 ? nil : categories[categorySegmentedControl.selectedSegmentIndex]
+        let selectedIndex = categorySegmentedControl.selectedSegmentIndex
+        let categories = CategoryManager.shared.categories
+        
+        // 安全检查
+        guard selectedIndex >= 0, selectedIndex < categories.count else {
+            print("无效的分类索引")
+            return
+        }
+        
+        currentCategory = selectedIndex == 0 ? nil : categories[selectedIndex]
         loadTasks()
     }
     
@@ -228,6 +253,103 @@ class TaskListViewController: UIViewController {
         
         // 刷新表格
         tableView.reloadData()
+    }
+    
+    @objc private func categoryManageTapped() {
+        let alert = UIAlertController(title: "分类管理", message: nil, preferredStyle: .actionSheet)
+        
+        // 添加新分类
+        alert.addAction(UIAlertAction(title: "添加分类", style: .default) { [weak self] _ in
+            self?.showAddCategoryAlert()
+        })
+        
+        // 删除现有分类
+        for category in CategoryManager.shared.editableCategories {
+            alert.addAction(UIAlertAction(title: "删除: \(category)", style: .destructive) { [weak self] _ in
+                self?.deleteCategory(category)
+            })
+        }
+        
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        present(alert, animated: true)
+    }
+    
+    private func showAddCategoryAlert() {
+        let alert = UIAlertController(
+            title: "添加分类",
+            message: "请输入新分类名称",
+            preferredStyle: .alert
+        )
+        
+        alert.addTextField { textField in
+            textField.placeholder = "分类名称"
+        }
+        
+        alert.addAction(UIAlertAction(title: "取消", style: .cancel))
+        alert.addAction(UIAlertAction(title: "添加", style: .default) { [weak self] _ in
+            if let categoryName = alert.textFields?.first?.text,
+               !categoryName.isEmpty {
+                CategoryManager.shared.addCategory(categoryName)
+                self?.updateCategoryControl()
+            }
+        })
+        
+        present(alert, animated: true)
+    }
+    
+    private func deleteCategory(_ category: String) {
+        // 如果删除的是当前选中的分类，切换到"全部"
+        if category == CategoryManager.shared.categories[categorySegmentedControl.selectedSegmentIndex] {
+            categorySegmentedControl.selectedSegmentIndex = 0
+            currentCategory = nil
+        }
+        
+        CategoryManager.shared.deleteCategory(category)
+        updateCategoryControl()
+        loadTasks()
+    }
+    
+    @objc private func categoriesDidChange() {
+        updateCategoryControl()
+    }
+    
+    private func updateCategoryControl() {
+        let categories = CategoryManager.shared.categories
+        let currentIndex = categorySegmentedControl.selectedSegmentIndex
+        
+        // 重新创建分段控制器
+        let newControl = UISegmentedControl(items: categories)
+        newControl.selectedSegmentIndex = min(currentIndex, categories.count - 1)
+        
+        // 复制原有样式
+        newControl.backgroundColor = categorySegmentedControl.backgroundColor
+        newControl.selectedSegmentTintColor = categorySegmentedControl.selectedSegmentTintColor
+        newControl.setTitleTextAttributes(
+            categorySegmentedControl.titleTextAttributes(for: .normal),
+            for: .normal
+        )
+        newControl.setTitleTextAttributes(
+            categorySegmentedControl.titleTextAttributes(for: .selected),
+            for: .selected
+        )
+        
+        // 替换旧控件
+        newControl.translatesAutoresizingMaskIntoConstraints = false
+        newControl.addTarget(self, action: #selector(categoryChanged), for: .valueChanged)
+        
+        categorySegmentedControl.removeFromSuperview()
+        view.addSubview(newControl)
+        
+        // 重新设置约束
+        NSLayoutConstraint.activate([
+            newControl.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 12),
+            newControl.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
+            newControl.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            newControl.heightAnchor.constraint(equalToConstant: 44)
+        ])
+        
+        // 更新引用
+        categorySegmentedControl = newControl
     }
     
     // 添加滑动删除和完成功能

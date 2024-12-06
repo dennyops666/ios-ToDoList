@@ -2,7 +2,6 @@ import UIKit
 
 class TaskDetailViewController: UIViewController {
     private var task: Task?
-    private let categories = ["工作", "生活", "学习"] // 预设的分类选项
     
     private let titleTextField: UITextField = {
         let textField = UITextField()
@@ -30,8 +29,8 @@ class TaskDetailViewController: UIViewController {
     }()
     
     private let categorySegmentedControl: UISegmentedControl = {
-        let control = UISegmentedControl(items: ["工作", "生活", "学习"])
-        control.selectedSegmentIndex = 0 // 默认选择第一个分类
+        let control = UISegmentedControl(items: CategoryManager.shared.editableCategories)
+        control.selectedSegmentIndex = 0
         return control
     }()
     
@@ -61,7 +60,8 @@ class TaskDetailViewController: UIViewController {
             titleTextField.text = task.title
             descriptionTextView.text = task.taskDescription
             datePicker.date = task.deadline
-            if let categoryIndex = categories.firstIndex(of: task.category) {
+            
+            if let categoryIndex = CategoryManager.shared.editableCategories.firstIndex(of: task.category) {
                 categorySegmentedControl.selectedSegmentIndex = categoryIndex
             }
             placeholderLabel.isHidden = !task.taskDescription.isEmpty
@@ -134,18 +134,40 @@ class TaskDetailViewController: UIViewController {
     }
     
     @objc private func saveTapped() {
+        guard let title = titleTextField.text, !title.isEmpty else {
+            let alert = UIAlertController(
+                title: "错误",
+                message: "请输入任务标题",
+                preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(title: "确定", style: .default))
+            present(alert, animated: true)
+            return
+        }
+        
         let context = CoreDataManager.shared.context
         let taskToSave = task ?? Task(context: context)
         
-        taskToSave.title = titleTextField.text ?? ""
+        taskToSave.title = title
         taskToSave.taskDescription = descriptionTextView.text
         taskToSave.deadline = datePicker.date
-        taskToSave.category = categories[categorySegmentedControl.selectedSegmentIndex]
+        
+        let selectedIndex = categorySegmentedControl.selectedSegmentIndex
+        let editableCategories = CategoryManager.shared.editableCategories
+        
+        guard selectedIndex >= 0, selectedIndex < editableCategories.count else {
+            taskToSave.category = editableCategories.first ?? "工作"
+            CoreDataManager.shared.saveContext()
+            NotificationManager.shared.scheduleNotification(for: taskToSave)
+            dismiss(animated: true)
+            return
+        }
+        
+        taskToSave.category = editableCategories[selectedIndex]
         taskToSave.priority = 0
         taskToSave.isCompleted = false
         
         CoreDataManager.shared.saveContext()
-        
         NotificationManager.shared.scheduleNotification(for: taskToSave)
         
         dismiss(animated: true)
