@@ -6,17 +6,27 @@ class TaskDetailViewController: UIViewController {
     
     private let titleTextField: UITextField = {
         let textField = UITextField()
-        textField.placeholder = "任务标题"
+        textField.placeholder = "输入任务标题"
         textField.borderStyle = .roundedRect
         return textField
     }()
     
     private let descriptionTextView: UITextView = {
         let textView = UITextView()
+        textView.font = .systemFont(ofSize: 15)
         textView.layer.borderWidth = 1
         textView.layer.borderColor = UIColor.systemGray4.cgColor
         textView.layer.cornerRadius = 5
+        textView.textContainerInset = UIEdgeInsets(top: 8, left: 4, bottom: 8, right: 4)
         return textView
+    }()
+    
+    private let placeholderLabel: UILabel = {
+        let label = UILabel()
+        label.text = "添加任务描述（可选）"
+        label.font = .systemFont(ofSize: 15)
+        label.textColor = .tertiaryLabel
+        return label
     }()
     
     private let categorySegmentedControl: UISegmentedControl = {
@@ -45,15 +55,16 @@ class TaskDetailViewController: UIViewController {
         super.viewDidLoad()
         setupUI()
         setupNavigationBar()
+        setupTextViewDelegate()
         
         if let task = task {
-            // 如果是编辑现有任务，填充现有数据
             titleTextField.text = task.title
             descriptionTextView.text = task.taskDescription
             datePicker.date = task.deadline
             if let categoryIndex = categories.firstIndex(of: task.category) {
                 categorySegmentedControl.selectedSegmentIndex = categoryIndex
             }
+            placeholderLabel.isHidden = !task.taskDescription.isEmpty
         }
     }
     
@@ -69,6 +80,9 @@ class TaskDetailViewController: UIViewController {
         categorySegmentedControl.translatesAutoresizingMaskIntoConstraints = false
         descriptionTextView.translatesAutoresizingMaskIntoConstraints = false
         datePicker.translatesAutoresizingMaskIntoConstraints = false
+        
+        descriptionTextView.addSubview(placeholderLabel)
+        placeholderLabel.translatesAutoresizingMaskIntoConstraints = false
         
         NSLayoutConstraint.activate([
             titleTextField.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 20),
@@ -87,7 +101,11 @@ class TaskDetailViewController: UIViewController {
             
             datePicker.topAnchor.constraint(equalTo: descriptionTextView.bottomAnchor, constant: 20),
             datePicker.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 20),
-            datePicker.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20)
+            datePicker.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            
+            placeholderLabel.topAnchor.constraint(equalTo: descriptionTextView.topAnchor, constant: 8),
+            placeholderLabel.leadingAnchor.constraint(equalTo: descriptionTextView.leadingAnchor, constant: 8),
+            placeholderLabel.trailingAnchor.constraint(equalTo: descriptionTextView.trailingAnchor, constant: -8)
         ])
     }
     
@@ -105,6 +123,10 @@ class TaskDetailViewController: UIViewController {
             target: self,
             action: #selector(saveTapped)
         )
+    }
+    
+    private func setupTextViewDelegate() {
+        descriptionTextView.delegate = self
     }
     
     @objc private func cancelTapped() {
@@ -127,5 +149,20 @@ class TaskDetailViewController: UIViewController {
         NotificationManager.shared.scheduleNotification(for: taskToSave)
         
         dismiss(animated: true)
+    }
+}
+
+// MARK: - UITextViewDelegate
+extension TaskDetailViewController: UITextViewDelegate {
+    func textViewDidChange(_ textView: UITextView) {
+        placeholderLabel.isHidden = !textView.text.isEmpty
+    }
+    
+    func textViewDidBeginEditing(_ textView: UITextView) {
+        placeholderLabel.isHidden = !textView.text.isEmpty
+    }
+    
+    func textViewDidEndEditing(_ textView: UITextView) {
+        placeholderLabel.isHidden = !textView.text.isEmpty
     }
 } 
