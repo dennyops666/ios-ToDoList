@@ -1,141 +1,214 @@
 
-# To-Do List iOS 应用开发说明书
+# ToDo List iOS App 开发文档
 
-## 1. 项目简介
+## 1. 项目概述
 
-### 1.1 背景
-用户需要一个高效、简洁的工具来管理日常任务。本项目旨在开发一款易用的iOS应用，帮助用户记录和管理任务，提升时间利用率。
+### 1.1 项目目标
+开发一个功能完整的iOS待办事项应用，帮助用户管理日常任务，支持分类管理、主题切换等功能。
 
-### 1.2 目标
-开发一款支持任务添加、编辑、删除、提醒以及任务完成统计的轻量级To-Do List应用，操作简单，界面友好。
+### 1.2 核心功能
+- 任务的增删改查
+- 自定义分类管理
+- 主题模式切换
+- 任务提醒功能
 
----
+### 1.3 技术选型
+- 开发语言：Swift 5.0+
+- 界面框架：UIKit
+- 数据存储：CoreData
+- 本地通知：UserNotifications
+- 测试框架：XCTest
 
-## 2. 功能需求
+## 2. 架构设计
 
-### 2.1 核心功能
-1. **任务管理**
-   - 添加任务：输入标题、描述、分类、优先级、截止日期。
-   - 编辑任务：修改已有任务内容。
-   - 删除任务：单个或批量删除任务。
+### 2.1 整体架构
+采用 MVC 架构模式：
+- Model: 数据模型和业务逻辑
+- View: 用户界面元素
+- Controller: 业务流程控制
 
-2. **分类筛选**
-   - 用户可根据分类（如“工作”“生活”“学习”）筛选任务。
+### 2.2 模块划分
+```
+├── Models
+│   └── Task.swift (任务数据模型)
+├── Views
+│   └── TaskCell.swift (任务列表单元格)
+├── ViewControllers
+│   ├── TaskListViewController.swift (任务列表)
+│   └── TaskDetailViewController.swift (任务详情)
+└── Managers
+    ├── CoreDataManager.swift (数据管理)
+    ├── NotificationManager.swift (通知管理)
+    ├── ThemeManager.swift (主题管理)
+    └── CategoryManager.swift (分类管理)
+```
 
-3. **任务提醒**
-   - 根据任务截止日期发送本地通知。
+## 3. 数据模型
 
-4. **任务完成统计**
-   - 按日期统计每日任务完成情况，生成可视化图表。
-
----
-
-## 3. 技术需求
-
-### 3.1 开发环境
-- **操作系统**：macOS
-- **开发工具**：Xcode
-- **语言**：Swift
-
-### 3.2 技术选型
-- **UI 框架**：UIKit
-- **数据存储**：Core Data（存储任务数据）。
-- **通知服务**：UserNotifications（发送本地推送）。
-
----
-
-## 4. 详细设计
-
-### 4.1 界面设计
-1. **任务列表页**
-   - 展示按截止日期排序的任务。
-   - 支持分类筛选。
-   - 提供添加任务按钮。
-2. **任务详情页**
-   - 输入或查看任务的标题、描述、分类、优先级和截止日期。
-   - 切换任务完成状态。
-3. **统计页面**
-   - 以柱状图显示每日任务完成情况。
-
-#### 交互设计
-- **滑动操作**：向左滑删除任务，向右滑标记任务完成。
-- **长按操作**：支持批量选择任务。
-
----
-
-### 4.2 数据设计
-- **任务数据模型**
+### 3.1 Task 实体
 ```swift
-struct Task {
-    let id: UUID
-    var title: String
-    var description: String
-    var category: String
-    var priority: Int
-    var deadline: Date
-    var isCompleted: Bool
+class Task: NSManagedObject {
+    @NSManaged var id: UUID
+    @NSManaged var title: String
+    @NSManaged var taskDescription: String
+    @NSManaged var deadline: Date
+    @NSManaged var category: String
+    @NSManaged var priority: Int16
+    @NSManaged var isCompleted: Bool
 }
 ```
 
-- **分类数据模型**
+### 3.2 CoreData Schema
+```xml
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0">
+    <entity name="Task" representedClassName="Task">
+        <attribute name="id" attributeType="UUID"/>
+        <attribute name="title" attributeType="String"/>
+        <attribute name="taskDescription" attributeType="String"/>
+        <attribute name="deadline" attributeType="Date"/>
+        <attribute name="category" attributeType="String"/>
+        <attribute name="priority" attributeType="Integer 16"/>
+        <attribute name="isCompleted" attributeType="Boolean"/>
+    </entity>
+</model>
+```
+
+## 4. 管理器实现
+
+### 4.1 CoreDataManager
+负责数据的持久化存储和管理：
 ```swift
-struct Category {
-    let id: UUID
-    var name: String
+class CoreDataManager {
+    static let shared = CoreDataManager()
+    
+    var context: NSManagedObjectContext { ... }
+    
+    func saveContext() { ... }
+    func fetchTasks() -> [Task] { ... }
 }
 ```
 
-- **统计数据模型**
+### 4.2 NotificationManager
+处理本地通知相关功能：
 ```swift
-struct TaskStatistics {
-    var date: Date
-    var completedCount: Int
+class NotificationManager {
+    static let shared = NotificationManager()
+    
+    func requestAuthorization() { ... }
+    func scheduleNotification(for task: Task) { ... }
+    func removeNotification(for task: Task) { ... }
 }
 ```
 
----
+### 4.3 ThemeManager
+管理应用主题：
+```swift
+class ThemeManager {
+    static let shared = ThemeManager()
+    
+    var currentTheme: Theme { get set }
+    var colors: ThemeColors { get }
+}
+```
 
-### 4.3 系统架构
-1. **前端**
-   - 使用 UIKit 构建用户界面。
-   - 动态绑定数据，支持任务实时更新。
+### 4.4 CategoryManager
+管理任务分类：
+```swift
+class CategoryManager {
+    static let shared = CategoryManager()
+    
+    var categories: [String] { get }
+    
+    func addCategory(_ category: String) { ... }
+    func deleteCategory(_ category: String) { ... }
+}
+```
 
-2. **本地存储**
-   - 通过 Core Data 存储任务和分类数据，确保应用关闭后数据仍然可用。
+## 5. 视图控制器实现
 
-3. **通知模块**
-   - 使用 UserNotifications 框架设置任务提醒通知。
+### 5.1 TaskListViewController
+任务列表主界面：
+- 显示任务列表
+- 分类筛选
+- 任务状态管理
+- 主题切换
 
----
+### 5.2 TaskDetailViewController
+任务详情界面：
+- 任务信息编辑
+- 分类选择
+- 截止时间设置
+- 任务描述编辑
 
-## 5. 测试计划
+## 6. 自定义视图
 
-### 5.1 功能测试
-- 验证任务的增删改查是否正常。
-- 检查分类筛选功能的准确性。
-- 测试通知是否按截止时间推送。
+### 6.1 TaskCell
+任务列表单元格：
+- 显示任务信息
+- 支持滑动操作
+- 自适应主题变化
 
-### 5.2 性能测试
-- 测试任务数量较大时的加载速度。
-- 确保任务列表滚动顺畅，无卡顿。
+## 7. 测试规范
 
-### 5.3 兼容性测试
-- 在不同iOS版本（iOS 14及以上）和设备型号上测试。
+### 7.1 单元测试
+- CategoryManager 测试
+- ThemeManager 测试
+- CoreDataManager 测试
 
-### 5.4 用户体验测试
-- 模拟真实场景，验证操作逻辑是否直观。
+### 7.2 UI测试
+- 任务管理功能测试
+- 分类管理测试
+- 主题切换测试
 
----
+## 8. 开发规范
 
-## 6. 迭代计划
+### 8.1 代码规范
+- 遵循 Swift 官方代码规范
+- 使用 // MARK: 标记代码块
+- 必要的注释说明
 
-### 6.1 初版功能
-- 添加任务、编辑任务、删除任务。
-- 分类筛选和任务提醒功能。
+### 8.2 命名规范
+- 类名：大驼峰命名
+- 变量/方法：小驼峰命名
+- 常量：使用 static let
 
-### 6.2 后续计划
-- 增加数据云同步功能（如通过iCloud）。
-- 提供任务导出功能（PDF/Excel）。
-- 引入多语言支持。
+### 8.3 文件组织
+- 按功能模块分组
+- 相关文件放在同一目录
+- 清晰的目录结构
 
----
+## 9. 发布流程
+
+### 9.1 版本控制
+- 使用 Git 进行版本控制
+- 遵循语义化版本规范
+- 保持提交信息清晰
+
+### 9.2 测试验证
+- 运行所有单元测试
+- 执行 UI 测试
+- 手动功能测试
+
+### 9.3 打包发布
+- 更新版本号
+- 生成发布说明
+- 归档项目
+
+## 10. 维护计划
+
+### 10.1 Bug修复
+- 及时响应用户反馈
+- 修复已知问题
+- 更新测试用例
+
+### 10.2 功能迭代
+- 优先级功能
+- 标签系统
+- iCloud同步
+- Widget支持
+
+### 10.3 性能优化
+- 内存使用优化
+- 启动时间优化
+- 数据库查询优化
