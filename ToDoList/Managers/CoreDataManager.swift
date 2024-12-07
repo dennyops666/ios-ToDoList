@@ -7,14 +7,14 @@ class CoreDataManager {
         let container = NSPersistentContainer(name: "ToDoList")
         container.loadPersistentStores { _, error in
             if let error = error {
-                fatalError("无法加载Core Data存储: \(error)")
+                fatalError("加载Core Data失败: \(error)")
             }
         }
         return container
     }()
     
     var context: NSManagedObjectContext {
-        return persistentContainer.viewContext
+        persistentContainer.viewContext
     }
     
     func saveContext() {
@@ -25,5 +25,10 @@ class CoreDataManager {
                 print("保存Context失败: \(error)")
             }
         }
+    }
+    
+    func fetchAllTasks() -> [Task] {
+        let request: NSFetchRequest<Task> = Task.fetchRequest()
+        return (try? context.fetch(request)) ?? []
     }
 } 
