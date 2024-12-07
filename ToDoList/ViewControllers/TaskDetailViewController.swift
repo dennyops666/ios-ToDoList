@@ -41,6 +41,12 @@ class TaskDetailViewController: UIViewController {
         return picker
     }()
     
+    private let prioritySegmentedControl: UISegmentedControl = {
+        let control = UISegmentedControl(items: ["低", "中", "高"])
+        control.selectedSegmentIndex = 1 // 默认中优先级
+        return control
+    }()
+    
     init(task: Task?) {
         self.task = task
         super.init(nibName: nil, bundle: nil)
@@ -164,7 +170,7 @@ class TaskDetailViewController: UIViewController {
         }
         
         taskToSave.category = editableCategories[selectedIndex]
-        taskToSave.priority = 0
+        taskToSave.priority = Int16(prioritySegmentedControl.selectedSegmentIndex)
         taskToSave.isCompleted = false
         
         CoreDataManager.shared.saveContext()

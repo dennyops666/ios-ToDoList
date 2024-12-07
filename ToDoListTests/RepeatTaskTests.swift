@@ -1,3 +1,6 @@
+import XCTest
+@testable import ToDoList
+
 class RepeatTaskTests: XCTestCase {
     var coreDataManager: CoreDataManager!
     
@@ -8,7 +11,7 @@ class RepeatTaskTests: XCTestCase {
     
     func testRepeatTaskCreation() {
         let task = Task(context: coreDataManager.context)
-        task.repeatType = .daily
+        task.repeatType = RepeatType.daily.rawValue
         
         XCTAssertEqual(task.taskRepeatType, .daily)
     }
@@ -16,13 +19,13 @@ class RepeatTaskTests: XCTestCase {
     func testNextRepeatDate() {
         let task = Task(context: coreDataManager.context)
         task.deadline = Date()
-        task.repeatType = .daily
+        task.repeatType = RepeatType.daily.rawValue
         
         let nextDate = task.nextRepeatDate()
         let calendar = Calendar.current
         
         XCTAssertEqual(
-            calendar.component(.day, from: nextDate),
+            calendar.component(.day, from: nextDate!),
             calendar.component(.day, from: Date()) + 1
         )
     }
@@ -30,14 +33,13 @@ class RepeatTaskTests: XCTestCase {
     func testRepeatTaskCompletion() {
         let task = Task(context: coreDataManager.context)
         task.deadline = Date()
-        task.repeatType = .weekly
+        task.repeatType = RepeatType.weekly.rawValue
         
-        // 完成任务应该创建下一个重复任务
         task.complete()
         
         let nextTask = task.nextRepeatTask
         XCTAssertNotNil(nextTask)
-        XCTAssertEqual(nextTask?.repeatType, task.repeatType)
+        XCTAssertEqual(nextTask?.taskRepeatType, task.taskRepeatType)
         XCTAssertFalse(nextTask?.isCompleted ?? true)
     }
 } 

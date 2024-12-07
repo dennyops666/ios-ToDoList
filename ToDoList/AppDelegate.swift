@@ -15,14 +15,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         if CommandLine.arguments.contains("--uitesting") {
-            // 设置测试环境
             setupTestEnvironment()
         }
         return true
     }
 
     private func setupTestEnvironment() {
-        // 清理测试数据
         let domain = Bundle.main.bundleIdentifier!
         UserDefaults.standard.removePersistentDomain(forName: domain)
     }

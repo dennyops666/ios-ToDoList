@@ -1,3 +1,7 @@
+import XCTest
+import CoreData
+@testable import ToDoList
+
 class PerformanceTests: XCTestCase {
     var coreDataManager: CoreDataManager!
     
@@ -8,7 +12,6 @@ class PerformanceTests: XCTestCase {
     
     func testBatchTaskCreationPerformance() {
         measure {
-            // 批量创建100个任务
             for i in 0..<100 {
                 let task = Task(context: coreDataManager.context)
                 task.title = "Task \(i)"
@@ -21,7 +24,6 @@ class PerformanceTests: XCTestCase {
     }
     
     func testTaskSearchPerformance() {
-        // 首先创建测试数据
         for i in 0..<100 {
             let task = Task(context: coreDataManager.context)
             task.title = "Test Task \(i)"
@@ -36,7 +38,6 @@ class PerformanceTests: XCTestCase {
     }
     
     func testStatisticsCalculationPerformance() {
-        // 创建测试数据
         for _ in 0..<100 {
             let task = Task(context: coreDataManager.context)
             task.isCompleted = Bool.random()

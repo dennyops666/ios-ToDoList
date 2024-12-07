@@ -46,24 +46,26 @@ final class ToDoListUITests: XCTestCase {
         XCTAssertTrue(taskText.waitForExistence(timeout: 5), "任务未显示在列表中")
     }
     
-    private func addTaskWithCategory(title: String, category: String) throws {
+    private func addTaskWithCategory(title: String, category: String = "全部") throws {
         // 点击添加按钮
-        app.navigationBars["待办事项"].buttons["Add"].tap()
+        let addButton = app.navigationBars["待办事项"].buttons["Add"]
+        XCTAssertTrue(addButton.waitForExistence(timeout: 5))
+        addButton.tap()
         
         // 输入任务标题
         let titleTextField = app.textFields["输入任务标题"]
+        XCTAssertTrue(titleTextField.waitForExistence(timeout: 5))
         titleTextField.tap()
         titleTextField.typeText(title)
         
         // 保存任务
-        app.navigationBars["新建任务"].buttons["Save"].tap()
+        let saveButton = app.navigationBars["新建任务"].buttons["Save"]
+        XCTAssertTrue(saveButton.waitForExistence(timeout: 5))
+        saveButton.tap()
         
         // 等待任务出现在列表中
-        let predicate = NSPredicate(format: "exists == true")
         let taskText = app.staticTexts[title]
-        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: taskText)
-        let result = try XCTWaiter().wait(for: [expectation], timeout: 5.0)
-        XCTAssertEqual(result, .completed)
+        XCTAssertTrue(taskText.waitForExistence(timeout: 5), "任务未显示在列表中")
     }
     
     func testAddTask() throws {
@@ -115,7 +117,7 @@ final class ToDoListUITests: XCTestCase {
         XCTAssertTrue(taskCell.waitForExistence(timeout: 5))
         taskCell.swipeRight()
         
-        // 等待并点击���成按钮
+        // 等待并点击完成按钮
         let completeButton = app.buttons.matching(identifier: "完成").firstMatch
         XCTAssertTrue(completeButton.waitForExistence(timeout: 5))
         completeButton.tap()
@@ -136,13 +138,28 @@ final class ToDoListUITests: XCTestCase {
     }
     
     func testCategoryFilter() throws {
-        // 添加两个任务
-        try addTaskWithCategory(title: "第一个任务", category: "全部")
-        try addTaskWithCategory(title: "第二个任务", category: "全部")
+        // 添加第一个任务
+        try addBasicTask()
         
-        // 验证在"全部"分类下可以看到所有任务
-        XCTAssertTrue(app.staticTexts["第一个任务"].exists)
-        XCTAssertTrue(app.staticTexts["第二个任务"].exists)
+        // 等待第一个任务显示
+        let firstTaskText = app.staticTexts["测试任务"]
+        XCTAssertTrue(firstTaskText.waitForExistence(timeout: 5))
+        
+        // 添加第二个任务
+        app.navigationBars["待办事项"].buttons["Add"].tap()
+        let titleTextField = app.textFields["输入任务标题"]
+        XCTAssertTrue(titleTextField.waitForExistence(timeout: 5))
+        titleTextField.tap()
+        titleTextField.typeText("第二个任务")
+        app.navigationBars["新建任务"].buttons["Save"].tap()
+        
+        // 等待第二个任务显示
+        let secondTaskText = app.staticTexts["第二个任务"]
+        XCTAssertTrue(secondTaskText.waitForExistence(timeout: 5))
+        
+        // 验证两个任务都显示在列表中
+        XCTAssertTrue(firstTaskText.exists)
+        XCTAssertTrue(secondTaskText.exists)
     }
     
     func testAddCategory() throws {

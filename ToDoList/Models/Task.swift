@@ -34,6 +34,7 @@ public class Task: NSManagedObject {
     @NSManaged var isCompleted: Bool
     @NSManaged var createdAt: Date
     @NSManaged var completedAt: Date?
+    @NSManaged var category: String
     @NSManaged var parentTask: Task?
     @NSManaged var subTasks: Set<Task>
     
@@ -56,4 +57,35 @@ public class Task: NSManagedObject {
     @nonobjc public class func fetchRequest() -> NSFetchRequest<Task> {
         return NSFetchRequest<Task>(entityName: "Task")
     }
-} 
+    
+    func nextRepeatDate() -> Date? {
+        guard let repeatType = RepeatType(rawValue: self.repeatType) else { return nil }
+        let calendar = Calendar.current
+        switch repeatType {
+        case .daily:
+            return calendar.date(byAdding: .day, value: 1, to: self.deadline)
+        case .weekly:
+            return calendar.date(byAdding: .weekOfYear, value: 1, to: self.deadline)
+        case .monthly:
+            return calendar.date(byAdding: .month, value: 1, to: self.deadline)
+        default:
+            return nil
+        }
+    }
+    
+    func complete() {
+        self.isCompleted = true
+        self.completedAt = Date()
+    }
+    
+    var nextRepeatTask: Task? {
+        guard let nextDate = nextRepeatDate() else { return nil }
+        let newTask = Task(context: self.managedObjectContext!)
+        newTask.title = self.title
+        newTask.taskDescription = self.taskDescription
+        newTask.deadline = nextDate
+        newTask.repeatType = self.repeatType
+        return newTask
+    }
+
+}

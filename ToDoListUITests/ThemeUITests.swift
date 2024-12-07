@@ -1,10 +1,15 @@
+import XCTest
+
 class ThemeUITests: XCTestCase {
     let app = XCUIApplication()
     
-    override func setUp() {
-        super.setUp()
+    override func setUpWithError() throws {
         continueAfterFailure = false
         app.launch()
+    }
+    
+    override func tearDownWithError() throws {
+        app.terminate()
     }
     
     func testThemeSwitch() {
