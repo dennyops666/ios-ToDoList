@@ -49,7 +49,7 @@
 
 1. 克隆仓库：
 ```bash
-git clone https://github.com/yourusername/ToDoList.git
+git clone https://github.com/dennyops666/ios-ToDoList.git
 ```
 
 2. 打开项目：
@@ -195,11 +195,6 @@ Cmd + U
 
 ## 联系方式
 
-作者：[Your Name]
-邮箱：[your.email@example.com]
-项目链接：https://github.com/yourusername/ToDoList
-
-## 致谢
-
-- [Swift Style Guide](https://github.com/raywenderlich/swift-style-guide)
-- [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/) 
+作者：[dennyops666]
+邮箱：[dennyoffer@outlook.com]
+项目链接：https://github.com/dennyops666/ios-ToDoList.git
