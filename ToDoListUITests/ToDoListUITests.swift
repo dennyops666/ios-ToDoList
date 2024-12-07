@@ -20,13 +20,17 @@ final class ToDoListUITests: XCTestCase {
         // 点击添加按钮
         app.navigationBars["待办事项"].buttons["Add"].tap()
         
-        // 输入任务标题
+        // 等待输入界面出现
         let titleTextField = app.textFields["输入任务标题"]
+        XCTAssertTrue(titleTextField.waitForExistence(timeout: 5))
+        
+        // 输入任务标题
         titleTextField.tap()
         titleTextField.typeText("测试任务")
         
         // 输入描述
         let descriptionTextView = app.textViews.element
+        XCTAssertTrue(descriptionTextView.waitForExistence(timeout: 5))
         descriptionTextView.tap()
         descriptionTextView.typeText("这是一个测试任务")
         
@@ -34,11 +38,14 @@ final class ToDoListUITests: XCTestCase {
         app.navigationBars["新建任务"].buttons["Save"].tap()
         
         // 等待任务出现在列表中
-        let predicate = NSPredicate(format: "exists == true")
         let taskText = app.staticTexts["测试任务"]
-        let expectation = XCTNSPredicateExpectation(predicate: predicate, object: taskText)
+        let exists = NSPredicate(format: "exists == true")
+        let expectation = XCTNSPredicateExpectation(predicate: exists, object: taskText)
         let result = try XCTWaiter().wait(for: [expectation], timeout: 5.0)
-        XCTAssertEqual(result, .completed)
+        XCTAssertEqual(result, .completed, "任务添加失败")
+        
+        // 确保任务确实显示在列表中
+        XCTAssertTrue(taskText.exists, "任务未显示在列表中")
     }
     
     private func addTaskWithCategory(title: String, category: String) throws {
@@ -69,13 +76,33 @@ final class ToDoListUITests: XCTestCase {
     func testDeleteTask() throws {
         try addBasicTask()
         
+        // 等待任务出现在列表中
+        let taskText = app.staticTexts["测试任务"]
+        XCTAssertTrue(taskText.waitForExistence(timeout: 5))
+        
+        // 记录当前任务数量
+        let initialTaskCount = app.cells.count
+        
         // 滑动删除
         let taskCell = app.cells.element(boundBy: 0)
         taskCell.swipeLeft()
-        app.buttons["删除"].tap()
         
-        // 验证任务是否已被删除
-        XCTAssertFalse(app.staticTexts["测试任务"].exists)
+        // 等待删除按钮出现并点击
+        let deleteButton = app.buttons["删除"]
+        XCTAssertTrue(deleteButton.waitForExistence(timeout: 5))
+        deleteButton.tap()
+        
+        // 使用 RunLoop 等待删除操作完成
+        let runLoop = RunLoop.current
+        let deleteDeadline = Date().addingTimeInterval(5)
+        
+        while taskText.exists && Date() < deleteDeadline {
+            runLoop.run(until: Date().addingTimeInterval(0.1))
+        }
+        
+        // 验证任务已被删除
+        XCTAssertFalse(taskText.exists, "任务应该已被删除")
+        XCTAssertEqual(app.cells.count, initialTaskCount - 1, "任务数量应该减少1")
     }
     
     func testCompleteTask() throws {

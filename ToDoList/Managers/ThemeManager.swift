@@ -53,15 +53,24 @@ struct ThemeColors {
 
 class ThemeManager {
     static let shared = ThemeManager()
-    private init() {}
+    private let themeKey = "AppTheme"
+    
+    private init() {
+        // 不再需要 isFirstLaunchKey
+    }
     
     var currentTheme: Theme {
         get {
-            let rawValue = UserDefaults.standard.integer(forKey: "AppTheme")
+            // 如果没有保存的值，返回 .system
+            if !UserDefaults.standard.contains(key: themeKey) {
+                return .system
+            }
+            let rawValue = UserDefaults.standard.integer(forKey: themeKey)
             return Theme(rawValue: rawValue) ?? .system
         }
         set {
-            UserDefaults.standard.set(newValue.rawValue, forKey: "AppTheme")
+            UserDefaults.standard.set(newValue.rawValue, forKey: themeKey)
+            UserDefaults.standard.synchronize()
             NotificationCenter.default.post(name: .themeChanged, object: nil)
         }
     }
@@ -81,4 +90,10 @@ class ThemeManager {
 
 extension Notification.Name {
     static let themeChanged = Notification.Name("ThemeChanged")
+}
+
+extension UserDefaults {
+    func contains(key: String) -> Bool {
+        return object(forKey: key) != nil
+    }
 } 
